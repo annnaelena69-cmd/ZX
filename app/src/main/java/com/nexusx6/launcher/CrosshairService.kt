@@ -35,6 +35,8 @@ class CrosshairService : Service() {
     private var colorName = "Cyan"
     private var size = 1
     private var smoothPreset = "Balanced"
+    private var clarityPreset = "Balanced"
+    private var crosshairEnabled = true
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         shape = intent?.getStringExtra("shape") ?: shape
@@ -159,6 +161,28 @@ class CrosshairService : Service() {
             smoothPreset = next(smoothPreset, listOf("Balanced", "Smooth Feel", "Battery Saver"))
             summary.text = "Preset $smoothPreset dipilih. Lihat tips di bawah."
             Toast.makeText(this, smoothAdvice(), Toast.LENGTH_LONG).show()
+        }
+        addMenuButton(panel, "Crosshair: ${if (crosshairEnabled) "ON" else "OFF"}  ◉") {
+            crosshairEnabled = !crosshairEnabled
+            crosshairView?.visibility = if (crosshairEnabled) View.VISIBLE else View.GONE
+            summary.text = "Crosshair ${if (crosshairEnabled) "aktif" else "disembunyikan"}"
+        }
+        addMenuButton(panel, "Visual preset: $clarityPreset  ↻") {
+            clarityPreset = next(clarityPreset, listOf("Balanced", "Clarity", "Vivid", "Eye Care"))
+            summary.text = "Preset visual: $clarityPreset"
+            val advice = when (clarityPreset) {
+                "Clarity" -> "Untuk gambar lebih jelas, coba sharpness/resolusi di menu game jika tersedia. Overlay tidak mengubah render game."
+                "Vivid" -> "Coba mode warna vivid di pengaturan layar bila tersedia; cek agar warna tidak terlalu menyilaukan."
+                "Eye Care" -> "Gunakan kenyamanan mata saat jeda dan sesuaikan kecerahan dengan ruangan."
+                else -> "Utamakan FPS stabil dan suhu perangkat."
+            }
+            Toast.makeText(this, advice, Toast.LENGTH_LONG).show()
+        }
+        addMenuButton(panel, "Touch response tips") {
+            Toast.makeText(this, "Atur sensitivitas dan ukuran tombol dari pengaturan kontrol di dalam game. Tes di Training Ground; perubahan ini tidak memaksa nilai game.", Toast.LENGTH_LONG).show()
+        }
+        addMenuButton(panel, "Network / memory tips") {
+            Toast.makeText(this, "Tutup unduhan latar, gunakan koneksi stabil, sisakan ruang penyimpanan, dan hindari perangkat terlalu panas. Ping tidak bisa diturunkan oleh overlay.", Toast.LENGTH_LONG).show()
         }
         addMenuButton(panel, "Tips stabilkan frame") {
             Toast.makeText(this, smoothAdvice(), Toast.LENGTH_LONG).show()
