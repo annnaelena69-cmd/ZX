@@ -68,8 +68,8 @@ class MainActivity : ComponentActivity() {
                     Text("Gaming companion native Android untuk sesi 120 Hz.", color = Muted)
                     CardBlock("⚡ PERFORMANCE PRESET") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("Balanced", "Smooth Feel", "Focus").forEach { item ->
-                                FilterChip(selected = profile == item, onClick = { profile = item; prefs.edit().putString("profile", item).apply(); status = when(item) { "Smooth Feel" -> "Tips: tutup aplikasi latar dan jaga suhu."; "Focus" -> "Mode fokus dipilih."; else -> "Profil seimbang dipilih." } }, label = { Text(item, fontSize = 11.sp) })
+                            listOf("Balanced", "Smooth Feel", "Ultra Smooth", "Focus").forEach { item ->
+                                FilterChip(selected = profile == item, onClick = { profile = item; prefs.edit().putString("profile", item).apply(); status = when(item) { "Smooth Feel" -> "Tips: refresh rate tertinggi yang tersedia, grafik stabil, suhu terjaga."; "Ultra Smooth" -> "Profil tips performa dipilih; tidak mengunci FPS atau mengubah refresh rate."; "Focus" -> "Mode fokus dipilih."; else -> "Profil seimbang dipilih." } }, label = { Text(item, fontSize = 11.sp) })
                             }
                         }
                         Text("Preset memberi rekomendasi saja; tidak mengubah FPS atau batas refresh layar.", color = Muted, fontSize = 12.sp)
