@@ -3,6 +3,7 @@ package com.nexusx6.launcher
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -57,6 +58,7 @@ class MainActivity : ComponentActivity() {
             var selectedGames by remember { mutableStateOf(loadSavedGames(prefs)) }
             var showGamePicker by remember { mutableStateOf(false) }
             var availableGames by remember { mutableStateOf(emptyList<GameEntry>()) }
+            var showAllApps by remember { mutableStateOf(false) }
             var customPhoto by remember { mutableStateOf(prefs.getString("custom_photo", null)) }
             var clarityMode by remember { mutableStateOf(prefs.getString("clarity", "Balanced") ?: "Balanced") }
             val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -109,7 +111,7 @@ class MainActivity : ComponentActivity() {
                     CardBlock("🎮 MY GAME LIBRARY") {
                         Text("Pilih game yang terpasang di HP. Game pilihan akan tampil di daftar cepat.", color = Muted, fontSize = 12.sp)
                         SettingSwitch("Tampilkan tombol N saat game dibuka", "Overlay otomatis dijalankan sebelum game jika izin overlay sudah aktif.", overlayAuto) { overlayAuto = it; prefs.edit().putBoolean("overlay_auto", it).apply() }
-                        Button(onClick = { availableGames = discoverGames(); showGamePicker = true }, modifier = Modifier.fillMaxWidth()) { Text("＋ Pilih / tambah game dari HP") }
+                        Button(onClick = { availableGames = discoverGames(showAllApps); showGamePicker = true }, modifier = Modifier.fillMaxWidth()) { Text("＋ Pilih / tambah game dari HP") }
                         if (selectedGames.isEmpty()) Text("Belum ada game dipilih. Tekan tombol di atas.", color = Muted, fontSize = 12.sp)
                         selectedGames.forEach { game ->
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -140,13 +142,13 @@ class MainActivity : ComponentActivity() {
                         Text("Bentuk", color = Color.White, fontWeight = FontWeight.SemiBold)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             listOf("Plus", "Dot", "Circle", "X", "T").forEach { item ->
-                                FilterChip(selected = shape == item, onClick = { shape = item; prefs.edit().putString("shape", item).apply() }, label = { Text(item, fontSize = 11.sp) })
+                                FilterChip(selected = shape == item, onClick = { shape = item; prefs.edit().putString("shape", item).apply(); if (overlay && Settings.canDrawOverlays(this@MainActivity)) startCrosshair(shape, crossColor) }, label = { Text(item, fontSize = 11.sp) })
                             }
                         }
                         Text("Warna", color = Color.White, fontWeight = FontWeight.SemiBold)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             listOf("Cyan", "Lime", "Pink", "Red", "White").forEach { item ->
-                                FilterChip(selected = crossColor == item, onClick = { crossColor = item; prefs.edit().putString("color", item).apply() }, label = { Text(item, fontSize = 11.sp) })
+                                FilterChip(selected = crossColor == item, onClick = { crossColor = item; prefs.edit().putString("color", item).apply(); if (overlay && Settings.canDrawOverlays(this@MainActivity)) startCrosshair(shape, crossColor) }, label = { Text(item, fontSize = 11.sp) })
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -232,11 +234,13 @@ class MainActivity : ComponentActivity() {
         startService(i)
     }
 
-    private fun discoverGames(): List<GameEntry> {
+    private fun discoverGames(includeAllApps: Boolean = false): List<GameEntry> {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         return try { packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL).mapNotNull { info ->
             val pkg = info.activityInfo?.packageName ?: return@mapNotNull null
             if (pkg == packageName) return@mapNotNull null
+            val appInfo = info.activityInfo?.applicationInfo ?: return@mapNotNull null
+            if (!includeAllApps && appInfo.category != ApplicationInfo.CATEGORY_GAME) return@mapNotNull null
             val label = info.loadLabel(packageManager)?.toString()?.trim().orEmpty()
             if (label.isBlank()) null else GameEntry(label, pkg)
         }.distinctBy { it.packageName }.sortedBy { it.label.lowercase() } } catch (_: Exception) { emptyList() }
