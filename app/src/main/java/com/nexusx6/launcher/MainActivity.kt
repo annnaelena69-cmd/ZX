@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
             var shape by remember { mutableStateOf(prefs.getString("shape", "Plus") ?: "Plus") }
             var crossColor by remember { mutableStateOf(prefs.getString("color", "Cyan") ?: "Cyan") }
             var overlay by remember { mutableStateOf(false) }
+            var overlayAuto by remember { mutableStateOf(prefs.getBoolean("overlay_auto", true)) }
             var boost by remember { mutableStateOf(prefs.getBoolean("boost", true)) }
             var impact by remember { mutableStateOf(prefs.getBoolean("impact", true)) }
             var voiceEnabled by remember { mutableStateOf(false) }
@@ -107,6 +108,7 @@ class MainActivity : ComponentActivity() {
                     }
                     CardBlock("🎮 MY GAME LIBRARY") {
                         Text("Pilih game yang terpasang di HP. Game pilihan akan tampil di daftar cepat.", color = Muted, fontSize = 12.sp)
+                        SettingSwitch("Tampilkan tombol N saat game dibuka", "Overlay otomatis dijalankan sebelum game jika izin overlay sudah aktif.", overlayAuto) { overlayAuto = it; prefs.edit().putBoolean("overlay_auto", it).apply() }
                         Button(onClick = { availableGames = discoverGames(); showGamePicker = true }, modifier = Modifier.fillMaxWidth()) { Text("＋ Pilih / tambah game dari HP") }
                         if (selectedGames.isEmpty()) Text("Belum ada game dipilih. Tekan tombol di atas.", color = Muted, fontSize = 12.sp)
                         selectedGames.forEach { game ->
@@ -253,7 +255,11 @@ class MainActivity : ComponentActivity() {
     @Composable private fun GameButton(label: String, pkg: String, report: (String) -> Unit) {
         OutlinedButton(onClick = {
             val launch = packageManager.getLaunchIntentForPackage(pkg)
-            if (launch != null) { startActivity(launch); report("Membuka $label…") }
+            if (launch != null) {
+                if (overlayAuto && Settings.canDrawOverlays(this@MainActivity)) startCrosshair(shape, crossColor)
+                startActivity(launch)
+                report(if (overlayAuto && !Settings.canDrawOverlays(this@MainActivity)) "Membuka $label. Izinkan overlay agar tombol N tampil di dalam game." else "Membuka $label…")
+            }
             else report("$label belum terpasang atau ID paket berbeda.")
         }, modifier = Modifier.fillMaxWidth()) { Text("▶  $label") }
     }
