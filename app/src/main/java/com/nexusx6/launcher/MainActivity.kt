@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
             var status by remember { mutableStateOf("Siap bermain • POCO X6") }
             var customPhoto by remember { mutableStateOf(prefs.getString("custom_photo", null)) }
             var clarityMode by remember { mutableStateOf(prefs.getString("clarity", "Balanced") ?: "Balanced") }
-            val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
                     try { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) { }
                     customPhoto = uri.toString()
@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
                                 Text("N X 6  •  BLACK LEGION", color = Cyan, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
                             }
                         }
-                        Button(onClick = { photoPicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) { Text("Pilih foto dari galeri") }
+                        Button(onClick = { photoPicker.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) { Text("Pilih foto dari galeri") }
                         Text("Foto dipakai sebagai artwork di launcher; tidak diunggah ke server.", color = Muted, fontSize = 11.sp)
                     }
                     CardBlock("⚡ PERFORMANCE PRESET") {
