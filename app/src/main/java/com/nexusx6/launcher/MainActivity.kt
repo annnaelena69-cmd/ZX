@@ -10,6 +10,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -47,6 +49,16 @@ class MainActivity : ComponentActivity() {
             var voiceEnabled by remember { mutableStateOf(false) }
             var pitchRate by remember { mutableFloatStateOf(1.5f) }
             var status by remember { mutableStateOf("Siap bermain • POCO X6") }
+            var customPhoto by remember { mutableStateOf(prefs.getString("custom_photo", null)) }
+            var clarityMode by remember { mutableStateOf(prefs.getString("clarity", "Balanced") ?: "Balanced") }
+            val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                if (uri != null) {
+                    try { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) { }
+                    customPhoto = uri.toString()
+                    prefs.edit().putString("custom_photo", customPhoto).apply()
+                    status = "Foto kustom dipasang di launcher."
+                }
+            }
             val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
                 if (granted) {
                     try {
@@ -63,9 +75,21 @@ class MainActivity : ComponentActivity() {
 
             MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, background = Bg, surface = Panel, onPrimary = Bg, onBackground = Color.White, onSurface = Color.White)) {
                 Column(Modifier.fillMaxSize().background(Bg).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text("NEXUS X6 / GAMING LAUNCHER", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("◈ NEXUS X6 / BLACK LEGION", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Text("Main lebih\nresponsif.", fontSize = 36.sp, lineHeight = 39.sp, fontWeight = FontWeight.Black, color = Color.White)
-                    Text("Gaming companion native Android untuk sesi 120 Hz.", color = Muted)
+                    Text("Gaming companion • Android 15 / 16 • dark tactical edition", color = Muted)
+                    CardBlock("🖼️ CUSTOM LAUNCHER ART") {
+                        if (customPhoto != null) {
+                            AsyncImage(model = customPhoto, contentDescription = "Foto kustom launcher", modifier = Modifier.fillMaxWidth().height(170.dp), contentScale = ContentScale.Crop)
+                            OutlinedButton(onClick = { customPhoto = null; prefs.edit().remove("custom_photo").apply(); status = "Foto kustom dihapus." }, modifier = Modifier.fillMaxWidth()) { Text("Hapus foto") }
+                        } else {
+                            Box(Modifier.fillMaxWidth().height(92.dp).background(Color(0xFF080A0E), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
+                                Text("N X 6  •  BLACK LEGION", color = Cyan, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                            }
+                        }
+                        Button(onClick = { photoPicker.launch("image/*") }, modifier = Modifier.fillMaxWidth()) { Text("Pilih foto dari galeri") }
+                        Text("Foto dipakai sebagai artwork di launcher; tidak diunggah ke server.", color = Muted, fontSize = 11.sp)
+                    }
                     CardBlock("⚡ PERFORMANCE PRESET") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("Balanced", "Smooth Feel", "Ultra Smooth", "Focus").forEach { item ->
@@ -111,6 +135,15 @@ class MainActivity : ComponentActivity() {
                             if (!Settings.canDrawOverlays(this@MainActivity)) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
                             else { startCrosshair(shape, crossColor); overlay = true }
                         }, modifier = Modifier.fillMaxWidth()) { Text("Izinkan / perbarui overlay") }
+                    }
+                    CardBlock("👁️ CLARITY / RED MAGIC-STYLE PRESET") {
+                        Text("Pilih preset visibilitas. Android tidak mengizinkan aplikasi biasa mempertajam piksel game lain secara langsung; preset ini memberi panduan tuning dan tidak menandai atau melacak musuh.", color = Muted, fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("Balanced", "Clarity", "Vivid", "Eye Care").forEach { item ->
+                                FilterChip(selected = clarityMode == item, onClick = { clarityMode = item; prefs.edit().putString("clarity", item).apply(); status = when(item) { "Clarity" -> "Clarity dipilih: naikkan sharpness di pengaturan game jika tersedia."; "Vivid" -> "Vivid dipilih: coba saturasi layar secara moderat."; "Eye Care" -> "Eye Care dipilih."; else -> "Visual seimbang dipilih." } }, label = { Text(item, fontSize = 11.sp) })
+                            }
+                        }
+                        Text(when (clarityMode) { "Clarity" -> "Saran: gunakan resolusi tertinggi yang stabil, anti-aliasing sesuai FPS, dan sharpness game jika tersedia."; "Vivid" -> "Saran: gunakan mode warna layar yang lebih hidup jika tersedia di pengaturan sistem."; "Eye Care" -> "Saran: kurangi kecerahan di ruangan gelap dan aktifkan kenyamanan mata saat jeda."; else -> "Saran: prioritaskan frame rate stabil dan suhu perangkat." }, color = Cyan, fontSize = 11.sp)
                     }
                     CardBlock("👁️ VISUAL & COMFORT") {
                         SettingSwitch("Color boost (preferensi)", "Simpan pilihan untuk tuning manual di dalam game.", boost) { boost = it; prefs.edit().putBoolean("boost", it).apply() }
