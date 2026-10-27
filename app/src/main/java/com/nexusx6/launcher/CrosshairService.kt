@@ -40,9 +40,11 @@ class CrosshairService : Service() {
     private var crosshairEnabled = true
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        shape = intent?.getStringExtra("shape") ?: shape
-        colorName = intent?.getStringExtra("color") ?: colorName
-        size = (intent?.getIntExtra("size", size) ?: size).coerceIn(1, 4)
+        val prefs = getSharedPreferences("nexus", MODE_PRIVATE)
+        shape = intent?.getStringExtra("shape") ?: prefs.getString("shape", shape) ?: shape
+        colorName = intent?.getStringExtra("color") ?: prefs.getString("color", colorName) ?: colorName
+        size = (intent?.getIntExtra("size", prefs.getInt("crosshair_size", size)) ?: size).coerceIn(1, 4)
+        crosshairEnabled = prefs.getBoolean("crosshair_enabled", true)
         smoothPreset = intent?.getStringExtra("smoothPreset") ?: smoothPreset
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         if (crosshairView == null) {
@@ -78,6 +80,7 @@ class CrosshairService : Service() {
             crosshairView?.shape = shape
             crosshairView?.color = selectedColor()
             crosshairView?.sizeScale = size
+            crosshairView?.visibility = if (crosshairEnabled) View.VISIBLE else View.GONE
             crosshairView?.invalidate()
         } catch (_: Exception) {}
     }
@@ -148,14 +151,17 @@ class CrosshairService : Service() {
         panel.addView(summary)
         addMenuButton(panel, "Bentuk: $shape  ↻") {
             shape = next(shape, listOf("Plus", "Dot", "Circle", "X", "T", "Cross"))
+            getSharedPreferences("nexus", MODE_PRIVATE).edit().putString("shape", shape).apply()
             refreshCrosshair(); summary.text = "Crosshair: $shape • $colorName • ukuran $size"
         }
         addMenuButton(panel, "Warna: $colorName  ↻") {
             colorName = next(colorName, listOf("Cyan", "Lime", "Pink", "Red", "White", "Yellow", "Purple"))
+            getSharedPreferences("nexus", MODE_PRIVATE).edit().putString("color", colorName).apply()
             refreshCrosshair(); summary.text = "Crosshair: $shape • $colorName • ukuran $size"
         }
         addMenuButton(panel, "Ukuran: $size  − / +") {
             size = if (size >= 4) 1 else size + 1
+            getSharedPreferences("nexus", MODE_PRIVATE).edit().putInt("crosshair_size", size).apply()
             refreshCrosshair(); summary.text = "Crosshair: $shape • $colorName • ukuran $size"
         }
         addMenuButton(panel, "Smooth preset: $smoothPreset  ↻") {
@@ -165,6 +171,7 @@ class CrosshairService : Service() {
         }
         addMenuButton(panel, "Crosshair: ${if (crosshairEnabled) "ON" else "OFF"}  ◉") {
             crosshairEnabled = !crosshairEnabled
+            getSharedPreferences("nexus", MODE_PRIVATE).edit().putBoolean("crosshair_enabled", crosshairEnabled).apply()
             crosshairView?.visibility = if (crosshairEnabled) View.VISIBLE else View.GONE
             summary.text = "Crosshair ${if (crosshairEnabled) "aktif" else "disembunyikan"}"
         }
