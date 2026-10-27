@@ -124,14 +124,20 @@ class MainActivity : ComponentActivity() {
                         onDismissRequest = { showGamePicker = false },
                         title = { Text("Pilih game dari perangkat") },
                         text = {
-                            if (availableGames.isEmpty()) Text("Tidak ada aplikasi launcher yang ditemukan.")
-                            else LazyColumn(Modifier.heightIn(max = 420.dp)) {
-                                items(availableGames, key = { it.packageName }) { game ->
-                                    val alreadyAdded = selectedGames.any { it.packageName == game.packageName }
-                                    TextButton(onClick = {
-                                        if (!alreadyAdded) { selectedGames = (selectedGames + game).sortedBy { it.label.lowercase() }; saveGames(prefs, selectedGames); status = "${game.label} ditambahkan." }
-                                        showGamePicker = false
-                                    }, modifier = Modifier.fillMaxWidth()) { Text((if (alreadyAdded) "✓  " else "＋  ") + game.label, modifier = Modifier.fillMaxWidth()) }
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(selected = !showAllApps, onClick = { showAllApps = false; availableGames = discoverGames(false) }, label = { Text("Game") })
+                                    FilterChip(selected = showAllApps, onClick = { showAllApps = true; availableGames = discoverGames(true) }, label = { Text("Semua aplikasi") })
+                                }
+                                if (availableGames.isEmpty()) Text(if (showAllApps) "Tidak ada aplikasi launcher ditemukan." else "Game tidak terdeteksi otomatis. Coba tab Semua aplikasi.")
+                                else LazyColumn(Modifier.heightIn(max = 340.dp)) {
+                                    items(availableGames, key = { it.packageName }) { game ->
+                                        val alreadyAdded = selectedGames.any { it.packageName == game.packageName }
+                                        TextButton(onClick = {
+                                            if (!alreadyAdded) { selectedGames = (selectedGames + game).sortedBy { it.label.lowercase() }; saveGames(prefs, selectedGames); status = "${game.label} ditambahkan." }
+                                            showGamePicker = false
+                                        }, modifier = Modifier.fillMaxWidth()) { Text((if (alreadyAdded) "✓  " else "＋  ") + game.label, modifier = Modifier.fillMaxWidth()) }
+                                    }
                                 }
                             }
                         },
