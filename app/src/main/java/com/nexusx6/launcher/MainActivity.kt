@@ -1,11 +1,15 @@
 package com.nexusx6.launcher
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -20,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 
 private val Bg = Color(0xFF080C14)
 private val Panel = Color(0xFF121D2B)
@@ -27,6 +32,8 @@ private val Cyan = Color(0xFF62F5E5)
 private val Muted = Color(0xFFA4B4C8)
 
 class MainActivity : ComponentActivity() {
+    private val voiceEngine = VoiceChangerEngine()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("nexus", MODE_PRIVATE)
@@ -37,7 +44,23 @@ class MainActivity : ComponentActivity() {
             var overlay by remember { mutableStateOf(false) }
             var boost by remember { mutableStateOf(prefs.getBoolean("boost", true)) }
             var impact by remember { mutableStateOf(prefs.getBoolean("impact", true)) }
+            var voiceEnabled by remember { mutableStateOf(false) }
+            var pitchRate by remember { mutableFloatStateOf(1.5f) }
             var status by remember { mutableStateOf("Siap bermain • POCO X6") }
+            val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) {
+                    try {
+                        voiceEngine.start(pitchRate)
+                        voiceEnabled = true
+                        status = "Live voice aktif • pakai earphone untuk menghindari feedback."
+                    } catch (e: Exception) {
+                        voiceEnabled = false
+                        status = "Audio gagal dimulai: periksa izin mikrofon atau perangkat audio."
+                    }
+                } else status = "Izin mikrofon ditolak; voice studio tidak aktif."
+            }
+            DisposableEffect(Unit) { onDispose { voiceEngine.stop() } }
+
             MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, background = Bg, surface = Panel, onPrimary = Bg, onBackground = Color.White, onSurface = Color.White)) {
                 Column(Modifier.fillMaxSize().background(Bg).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text("NEXUS X6 / GAMING LAUNCHER", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -95,15 +118,50 @@ class MainActivity : ComponentActivity() {
                         Button(onClick = { startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) { Text("Buka pengaturan layar Android") }
                         Button(onClick = { startActivity(Intent(Settings.ACTION_SOUND_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) { Text("Buka pengaturan suara Android") }
                     }
-                    CardBlock("🎙️ ANIME VOICE STUDIO") {
-                        Text("Voice changer wanita anime real-time belum diaktifkan dalam build ini. Android umumnya tidak mengizinkan aplikasi mengubah mikrofon aplikasi/game lain secara universal.", color = Muted, fontSize = 12.sp)
-                        Button(onClick = { status = "Voice studio: perlu modul audio native khusus dan uji kompatibilitas." }, modifier = Modifier.fillMaxWidth()) { Text("Cek status voice studio") }
+                    CardBlock("🎙️ ANIME VOICE STUDIO • LIVE MIC") {
+                        Text("Ubah pitch suara mikrofon secara langsung dan dengarkan hasilnya. Pilih pitch lebih tinggi untuk efek suara anime; gunakan earphone agar suara speaker tidak masuk kembali ke mikrofon.", color = Muted, fontSize = 12.sp)
+                        Text("Pitch / gaya", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("Natural" to 1.0f, "Anime" to 1.35f, "Anime +" to 1.6f).forEach { (label, rate) ->
+                                FilterChip(selected = pitchRate == rate, onClick = {
+                                    pitchRate = rate
+                                    if (voiceEnabled) {
+                                        try { voiceEngine.start(rate); status = "Pitch $label aktif secara live." }
+                                        catch (_: Exception) { voiceEnabled = false; status = "Audio gagal dimulai; coba lagi setelah cek izin mikrofon." }
+                                    }
+                                }, label = { Text(label, fontSize = 11.sp) })
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.weight(1f)) {
+                                Text(if (voiceEnabled) "Live microphone aktif" else "Aktifkan live voice", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text("Izin mikrofon hanya dipakai saat fitur ini dinyalakan.", color = Muted, fontSize = 11.sp)
+                            }
+                            Switch(checked = voiceEnabled, onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                        try { voiceEngine.start(pitchRate); voiceEnabled = true; status = "Live voice aktif • gunakan earphone." }
+                                        catch (_: Exception) { voiceEnabled = false; status = "Audio gagal dimulai; periksa izin dan perangkat audio." }
+                                    } else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                                } else {
+                                    voiceEngine.stop()
+                                    voiceEnabled = false
+                                    status = "Live voice dimatikan."
+                                }
+                            })
+                        }
+                        Text("Batas Android: ini memproses mikrofon dan memonitor suara di aplikasi ini. Tidak bisa mengganti input mic PUBG/ML/Free Fire dari aplikasi lain tanpa dukungan sistem/game.", color = Muted, fontSize = 11.sp)
                     }
                     Text(status, color = Cyan, fontSize = 12.sp)
                     Text("NEXUS X6 • Aplikasi pendamping. Refresh rate maksimal mengikuti hardware dan pengaturan sistem.", color = Muted, fontSize = 11.sp)
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        voiceEngine.stop()
+        super.onDestroy()
     }
 
     private fun startCrosshair(shape: String, color: String) {
