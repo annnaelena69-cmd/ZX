@@ -15,6 +15,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.ScrollView
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.content.Context
@@ -28,7 +29,7 @@ class CrosshairService : Service() {
     private var windowManager: WindowManager? = null
     private var crosshairView: CrosshairView? = null
     private var bubble: TextView? = null
-    private var menu: LinearLayout? = null
+    private var menu: View? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var menuParams: WindowManager.LayoutParams? = null
     private var shape = "Plus"
@@ -189,16 +190,22 @@ class CrosshairService : Service() {
         }
         addMenuButton(panel, "Tutup menu") { removeMenu() }
 
-        val p = WindowManager.LayoutParams(dp(240), WindowManager.LayoutParams.WRAP_CONTENT,
+        val scroller = ScrollView(this).apply {
+            isFillViewport = true
+            isVerticalScrollBarEnabled = true
+            addView(panel, ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+        val maxHeightPx = (resources.displayMetrics.heightPixels * 0.58f).toInt()
+        val p = WindowManager.LayoutParams(dp(260), maxHeightPx,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT).apply {
                 gravity = Gravity.TOP or Gravity.END
-                x = dp(14); y = dp(190)
+                x = dp(10); y = dp(80)
             }
-        menu = panel
+        menu = scroller
         menuParams = p
-        try { windowManager?.addView(panel, p) } catch (_: Exception) { menu = null; menuParams = null }
+        try { windowManager?.addView(scroller, p) } catch (_: Exception) { menu = null; menuParams = null }
     }
 
     private fun addMenuButton(parent: LinearLayout, label: String, action: () -> Unit) {
