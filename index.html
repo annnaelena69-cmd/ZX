@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#171326">
+<title>WKWK.exe — Zx</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,sans-serif;color:#f7f3ff;background:radial-gradient(circle at top,#39245a,#171326 58%);padding:24px 16px}.app{max-width:760px;margin:auto}.tag{color:#bca7ff;font-weight:800;letter-spacing:.14em;font-size:.78rem}h1{font-size:clamp(2.5rem,10vw,5rem);margin:.2em 0;line-height:1}p{color:#d0c9df}.panel{background:#ffffff0c;border:1px solid #ffffff20;border-radius:22px;padding:20px;margin:16px 0;box-shadow:0 15px 45px #0002}button{border:0;border-radius:13px;padding:13px 16px;margin:5px 5px 5px 0;font-weight:800;color:#1c1330;background:#c7b4ff;cursor:pointer}button:active{transform:scale(.98)}.result{font-size:1.2rem;min-height:56px;padding:12px;border-radius:14px;background:#0002}.muted{font-size:.85rem;color:#aaa0bd}footer{margin-top:30px;font-size:.8rem;color:#aaa0bd}
+</style>
+</head>
+<body><main class="app">
+<div class="tag">ZX LABS • MODE: ABSURD</div><h1>WKWK<span style="color:#c7b4ff">.exe</span></h1>
+<p>Aplikasi receh untuk keadaan ketika hidup butuh tombol skip.</p>
+<section class="panel"><h2>🎲 Generator Keabsurdan</h2><div id="joke" class="result">Tekan tombol. Jangan berharap masuk akal.</div><button onclick="pick('jokes','joke')">Gacha kekonyolan</button><button onclick="pick('excuses','joke')">Alasan telat</button></section>
+<section class="panel"><h2>🔮 Ramalan tidak resmi</h2><div id="fortune" class="result">Masa depanmu sedang buffering...</div><button onclick="pick('fortunes','fortune')">Baca nasib</button></section>
+<section class="panel"><h2>🪘 Mesin ketuk tidak berguna</h2><p>Jumlah ketukan: <strong id="count">0</strong></p><button onclick="tap()">KETUK DI SINI</button><button onclick="resetTap()">Reset hidup</button></section>
+<footer>WKWK.exe • Hiburan lokal di browser. Tidak mengukur aura atau masa depan sungguhan.</footer>
+</main>
+<script>
+const data={jokes:["Wi-Fi lemot karena sinyalnya lagi introvert.","Aku bukan malas, aku sedang mode hemat energi.","Otakku punya 47 tab terbuka dan semuanya buffering.","Kalau rebahan olahraga, aku sudah atlet nasional.","Dompetku pakai mode pesawat: tidak ada pemasukan."],excuses:["Maaf telat, tadi negosiasi sama alarm dan kalah.","Aku sudah berangkat secara spiritual.","GPS bilang belok kiri, takdir bilang rebahan.","Baterai semangat tinggal 2%, sedang cari charger."],fortunes:["Besok kamu akan menemukan sesuatu. Semoga bukan tugas tambahan.","Keberuntungan mendekat… lalu lupa alamat.","Hari ini cocok untuk minum air dan menghindari drama.","Ada peluang besar di depanmu. Itu pintu, silakan dibuka."]};
+function pick(group,target){const a=data[group];document.getElementById(target).textContent=a[Math.floor(Math.random()*a.length)]}
+let count=0;function tap(){count++;document.getElementById('count').textContent=count}function resetTap(){count=0;document.getElementById('count').textContent=count}
+</script></body></html>
