@@ -19,6 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +34,8 @@ private val Bg = Color(0xFF080C14)
 private val Panel = Color(0xFF121D2B)
 private val Cyan = Color(0xFF62F5E5)
 private val Muted = Color(0xFFA4B4C8)
+
+private data class GameEntry(val label: String, val packageName: String)
 
 class MainActivity : ComponentActivity() {
     private val voiceEngine = VoiceChangerEngine()
@@ -49,6 +53,9 @@ class MainActivity : ComponentActivity() {
             var voiceEnabled by remember { mutableStateOf(false) }
             var pitchRate by remember { mutableFloatStateOf(1.5f) }
             var status by remember { mutableStateOf("Siap bermain • POCO X6") }
+            var selectedGames by remember { mutableStateOf(loadSavedGames(prefs)) }
+            var showGamePicker by remember { mutableStateOf(false) }
+            var availableGames by remember { mutableStateOf(emptyList<GameEntry>()) }
             var customPhoto by remember { mutableStateOf(prefs.getString("custom_photo", null)) }
             var clarityMode by remember { mutableStateOf(prefs.getString("clarity", "Balanced") ?: "Balanced") }
             val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -98,13 +105,34 @@ class MainActivity : ComponentActivity() {
                         }
                         Text("Preset memberi rekomendasi saja; tidak mengubah FPS atau batas refresh layar.", color = Muted, fontSize = 12.sp)
                     }
-                    CardBlock("🎮 QUICK LAUNCH") {
-                        Text("Buka game yang sudah terpasang.", color = Muted, fontSize = 12.sp)
-                        GameButton("PUBG Mobile", "com.tencent.ig") { status = it }
-                        GameButton("Mobile Legends", "com.mobile.legends") { status = it }
-                        GameButton("Free Fire", "com.dts.freefireth") { status = it }
-                        GameButton("Free Fire MAX", "com.dts.freefiremax") { status = it }
+                    CardBlock("🎮 MY GAME LIBRARY") {
+                        Text("Pilih game yang terpasang di HP. Game pilihan akan tampil di daftar cepat.", color = Muted, fontSize = 12.sp)
+                        Button(onClick = { availableGames = discoverGames(); showGamePicker = true }, modifier = Modifier.fillMaxWidth()) { Text("＋ Pilih / tambah game dari HP") }
+                        if (selectedGames.isEmpty()) Text("Belum ada game dipilih. Tekan tombol di atas.", color = Muted, fontSize = 12.sp)
+                        selectedGames.forEach { game ->
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Box(Modifier.weight(1f)) { GameButton(game.label, game.packageName) { status = it } }
+                                OutlinedButton(onClick = { selectedGames = selectedGames.filterNot { it.packageName == game.packageName }; saveGames(prefs, selectedGames); status = "${game.label} dihapus dari daftar cepat." }) { Text("−") }
+                            }
+                        }
                     }
+                    if (showGamePicker) AlertDialog(
+                        onDismissRequest = { showGamePicker = false },
+                        title = { Text("Pilih game dari perangkat") },
+                        text = {
+                            if (availableGames.isEmpty()) Text("Tidak ada aplikasi launcher yang ditemukan.")
+                            else LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                                items(availableGames, key = { it.packageName }) { game ->
+                                    val alreadyAdded = selectedGames.any { it.packageName == game.packageName }
+                                    TextButton(onClick = {
+                                        if (!alreadyAdded) { selectedGames = (selectedGames + game).sortedBy { it.label.lowercase() }; saveGames(prefs, selectedGames); status = "${game.label} ditambahkan." }
+                                        showGamePicker = false
+                                    }, modifier = Modifier.fillMaxWidth()) { Text((if (alreadyAdded) "✓  " else "＋  ") + game.label, modifier = Modifier.fillMaxWidth()) }
+                                }
+                            }
+                        },
+                        confirmButton = { TextButton(onClick = { showGamePicker = false }) { Text("Selesai") } }
+                    )
                     CardBlock("🎯 CROSSHAIR OVERLAY") {
                         Text("Overlay sederhana di atas aplikasi lain. Sebagian game mungkin melarang overlay; matikan jika mengganggu atau tidak diizinkan.", color = Muted, fontSize = 12.sp)
                         Text("Bentuk", color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -200,6 +228,26 @@ class MainActivity : ComponentActivity() {
     private fun startCrosshair(shape: String, color: String) {
         val i = Intent(this, CrosshairService::class.java).putExtra("shape", shape).putExtra("color", color)
         startService(i)
+    }
+
+    private fun discoverGames(): List<GameEntry> {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return try { packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL).mapNotNull { info ->
+            val pkg = info.activityInfo?.packageName ?: return@mapNotNull null
+            if (pkg == packageName) return@mapNotNull null
+            val label = info.loadLabel(packageManager)?.toString()?.trim().orEmpty()
+            if (label.isBlank()) null else GameEntry(label, pkg)
+        }.distinctBy { it.packageName }.sortedBy { it.label.lowercase() } } catch (_: Exception) { emptyList() }
+    }
+
+    private fun loadSavedGames(prefs: android.content.SharedPreferences): List<GameEntry> {
+        val saved = prefs.getStringSet("selected_games", null)
+        if (saved != null) return saved.mapNotNull { value -> val parts = value.split("|", limit = 2); if (parts.size == 2) GameEntry(parts[1], parts[0]) else null }.sortedBy { it.label.lowercase() }
+        return listOf(GameEntry("PUBG Mobile", "com.tencent.ig"), GameEntry("Mobile Legends", "com.mobile.legends"), GameEntry("Free Fire", "com.dts.freefireth"), GameEntry("Free Fire MAX", "com.dts.freefiremax"))
+    }
+
+    private fun saveGames(prefs: android.content.SharedPreferences, games: List<GameEntry>) {
+        prefs.edit().putStringSet("selected_games", games.map { "${it.packageName}|${it.label}" }.toSet()).apply()
     }
 
     @Composable private fun GameButton(label: String, pkg: String, report: (String) -> Unit) {
