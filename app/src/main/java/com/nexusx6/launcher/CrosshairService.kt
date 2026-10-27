@@ -193,7 +193,7 @@ class CrosshairService : Service() {
         val scroller = ScrollView(this).apply {
             isFillViewport = true
             isVerticalScrollBarEnabled = true
-            addView(panel, ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            addView(panel, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
         val maxHeightPx = (resources.displayMetrics.heightPixels * 0.58f).toInt()
         val p = WindowManager.LayoutParams(dp(260), maxHeightPx,
