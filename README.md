@@ -1,20 +1,24 @@
-# NEXUS X6 Gaming Hub
+# NEXUS X6 Gaming Launcher (Android)
 
-A responsive Indonesian-language gaming companion dashboard designed for POCO X6 / 120 Hz gaming sessions.
+This repository is now a native Android application project for POCO X6 gaming sessions, not a website.
 
-## Features
-- Balanced, Smooth Feel, and Focus presets (recommendations only)
-- Crosshair preview with six shapes, six colors, and adjustable size
-- Visual tuning preview for saturation, contrast, and clarity
-- Voice preset/pitch controls as a UI prototype
-- Impact and haptic comfort controls as a UI prototype
-- GitHub Pages deployment through GitHub Actions
+## Features in this build
+- Native Android dashboard built with Kotlin and Jetpack Compose
+- Quick-launch buttons for PUBG Mobile, Mobile Legends, and Free Fire variants when installed
+- Balanced, Smooth Feel, and Focus presets with saved preferences
+- Crosshair overlay service with selectable shape and color; requires Android's display-over-other-apps permission
+- Shortcuts to Android display and sound settings
+- GitHub Actions workflow that builds a debug APK and uploads it as an artifact
 
-## Important limitations
-This is a static browser app. It does **not** modify Android system settings, increase the display beyond its 120 Hz hardware limit, increase game FPS, overlay a crosshair on top of other games, process microphone audio in real time, or change game audio/haptics globally. Those functions require native Android implementation and suitable permissions/APIs. Use in-game and official device settings for real changes.
+## Limitations
+- POCO X6 display hardware remains limited to 120 Hz; the app cannot turn it into 144 Hz or force higher game FPS.
+- Performance presets are guidance, not a system-level performance hack.
+- Color and impact switches save preferences; they do not globally rewrite another game's graphics, sound, or haptics.
+- Real-time anime voice changing across other games is not implemented yet and requires a dedicated audio-processing implementation and compatibility testing.
+- Some games may disallow overlays. Disable the crosshair if it violates a game's rules or causes problems.
 
-## Run locally
-Open `index.html` in a modern browser.
+## Get the APK
+Open the repository's Actions tab and select a successful “Build NEXUS X6 Android APK” run. Download the artifact named nexus-x6-debug-apk. This is a debug APK for testing, not a Play Store release.
 
-## Publish
-The workflow at `.github/workflows/deploy-pages.yml` deploys the repository to GitHub Pages when pushed to `main`. In repository Settings → Pages, select **GitHub Actions** as the source.
+## Build locally
+Install JDK 17 and Gradle 8.9, then run gradle assembleDebug from the repository root.
